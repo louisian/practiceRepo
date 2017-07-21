@@ -1,0 +1,14 @@
+.cell-container{
+    position: relative;
+    height: 500px;
+    width: 500px;
+    border: 1px solid black;
+    margin: 0 auto;
+
+}
+.movable-item{
+    position: absolute;
+    border: 1px solid black;
+    text-align: center;
+    /*background-color: white;*/
+}

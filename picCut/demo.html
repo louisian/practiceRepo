@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>图片裁剪</title>
+    <link href="picCut.css" rel="stylesheet"/>
+</head>
+<body>
+    <div class="img-shower">
+        <div class="button-group">
+            <button class="img-upload-button button-primary" href="javascript:void(0);">
+                上传一张图片
+                <input type="file" class="js-img-upload" accept="image/png,image/jpeg"/>
+            </button>
+            <button class="button-primary" id="savePic">保存</button>
+        </div>
+        <br/>
+        <canvas width="100" height="100" class="cut-img-canvas"></canvas>
+    </div>
+    <div class="img-cutter-container">
+        <div class="img-cutter">
+            <div class="cutter-container">
+                <img class="img-container">
+            </div>
+        </div>
+    </div>
+    <img class="sim-img-upload" src=""/>
+    <script src="picCut.js"></script>
+
+</body>
+</html>
