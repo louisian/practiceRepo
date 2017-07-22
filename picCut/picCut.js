@@ -16,26 +16,22 @@ var _=(function () {//功能函数
     }
     function getElement(expression,node) {
         node=node||document;
-        if(~expression.indexOf('.')){
-            return node.getElementsByClassName(expression.substring(1));
-        }
-        if(~expression.indexOf('#')){
-            return node.getElementById(expression.substring(1));
+        var retNode=null;
+        (~expression.indexOf('.'))&&(retNode=node.getElementsByClassName(expression.substring(1)));
+        (~expression.indexOf('#'))&&(retNode=node.getElementById(expression.substring(1)));
+        if(retNode){
+            return retNode;
         }
         return node.getElementsByTagName(expression);
     }
     function getStyle(node,prop,isToNumber) {
         var value=window.getComputedStyle(node).getPropertyValue(prop);
-        // console.log(value);
-        return isToNumber?parseFloat(value):value;
+        return isToNumber?parseInt(value):value;
     }
     function addClass(node,className) {
         var oldClassName=node.className;
-        if(oldClassName===''){
-            node.className=className;
-        }else{
-            node.className=oldClassName+' '+className;
-        }
+        oldClassName===''?node.className=className:
+        node.className=oldClassName+' '+className;
     }
     function removeClass(node,className) {
         var oldClassName= node.className;
@@ -64,7 +60,7 @@ var cutter=(function (_) {//iife封装
     var _layoutMask=_.h2n(maskTpl);
     var _layoutCutArea=_.h2n(cutAreaTpl);
     var pos={x:0,y:0};
-    var area={left:0,right:0};
+    var area={left:0,top:0};
     var hold=false;
     var picCanvasNoCon=_.$('.cut-img-canvas')[0];
     var picCanvas=picCanvasNoCon.getContext('2d');
@@ -96,12 +92,16 @@ var cutter=(function (_) {//iife封装
             pos.y=e.clientY;
             area.left=parseFloat(_.getStyle(_layoutCutArea,'left'))
             area.top=parseFloat(_.getStyle(_layoutCutArea,'top'))
+
             hold=true;
         })
-        var leftMax=(_.getStyle(imgContainer,'width',true)-_.getStyle(_layoutCutArea,'width',true));
-        var topMax=(_.getStyle(imgContainer,'height',true)-_.getStyle(_layoutCutArea,'height',true));//下边界及右边界
+        var leftMax=0;
+        var topMax=0;
         _layoutCutArea.addEventListener('mousemove',function (e) {
+
             if(!hold){return;}
+            !leftMax&&(leftMax=(_.getStyle(imgContainer,'width',true)-_.getStyle(_layoutCutArea,'width',true)));
+            !topMax&&(topMax=(_.getStyle(imgContainer,'height',true)-_.getStyle(_layoutCutArea,'height',true)));//下边界及右边界
             _layoutCutArea.style.left=area.left+e.clientX- pos.x+'px';
             _layoutCutArea.style.top=area.top+e.clientY- pos.y+'px';//跟随鼠标移动
             //限定裁剪框移动
@@ -138,8 +138,8 @@ _.$('#savePic').addEventListener('click',function (e) {//模拟上传
     var url=cutter.getDataUrl();
     var simUploadImg=_.$('.sim-img-upload')[0];
     setTimeout(function () {
-        alert('上传成功')
         simUploadImg.style.display='block'
         simUploadImg.setAttribute('src',url);
+        alert('上传成功')
     },1000)
 })

@@ -1,5 +1,5 @@
 /**
- * Created by 95 on 2017/7/18.
+ * Created by louyq on 2017/7/18.
  */
 var _=(function () {//功能函数
     function extend(o1,o2) {
@@ -16,11 +16,11 @@ var _=(function () {//功能函数
     }
     function getElement(expression,node) {
         node=node||document;
-        if(~expression.indexOf('.')){
-            return node.getElementsByClassName(expression.substring(1));
-        }
-        if(~expression.indexOf('#')){
-            return node.getElementById(expression.substring(1));
+        var retNode=null;
+        (~expression.indexOf('.'))&&(retNode=node.getElementsByClassName(expression.substring(1)));
+        (~expression.indexOf('#'))&&(retNode=node.getElementById(expression.substring(1)));
+        if(retNode){
+            return retNode;
         }
         return node.getElementsByTagName(expression);
     }
@@ -30,11 +30,10 @@ var _=(function () {//功能函数
     }
     function addClass(node,className) {
         var oldClassName=node.className;
-        if(oldClassName===''){
-            node.className=className;
-        }else{
-            node.className=oldClassName+' '+className;
-        }
+        var newClassName='';
+        newClassName=(oldClassName===''?className:(oldClassName+' '+className));
+        newClassName=newClassName.replace(/\r+/g,'');
+        node.className=newClassName;
     }
     function removeClass(node,className) {
         var oldClassName= node.className;
@@ -42,9 +41,20 @@ var _=(function () {//功能函数
         var newClassName=(' '+oldClassName+' ').replace(Reg,' ');
         node.className=newClassName.replace(/^\r|\r$/,'');//删除前后空格
     }
+    function hasClass(node, className){
+        var obj_class = node.className;//获取 class 内容.
+        var obj_class_lst = obj_class.split(/\s+/);//通过split空字符将cls转换成数组.
+
+        for(var x in obj_class_lst) {
+            if(obj_class_lst[x] == className) {//循环数组, 判断是否包含cls
+                return true;
+            }
+        }
+        return false;
+    }
     function getClassNum(node,className){
         var oldClassName=' '+ node.className+' ';
-        var Reg=new RegExp(' '+className+'([0-9]{1,1}) ');//正则匹配
+        var Reg=new RegExp(' '+className+'([0-9]{1}) ');//正则匹配
         Reg.test(oldClassName);
         return RegExp.$1;
     }
@@ -55,17 +65,19 @@ var _=(function () {//功能函数
         getStyle:getStyle,
         addClass:addClass,
         removeClass:removeClass,
-        getClassNum:getClassNum
+        getClassNum:getClassNum,
+        hasClass:hasClass,
     }
 })()
 
-function CellMove(options={}){
+function CellMove(options){
+    options=options||{};
     this.itemText=[['A',1,2,3],['B',4,5,6],['C',7,8,9],['D',10,11,12]];
-    this.prefix=['js-col-','js-row-'];
+    this.prefix=['js-row-','js-col-'];
     this.mouseHold=false;
     this.holdNode=null;
     var defaultOptions={
-        template:"<div class='movable-item' ></div>",
+        template:"<div class='movable-item'></div>",
         el:'.cell-container'
     }
     _.extend(options,defaultOptions);
@@ -76,7 +88,6 @@ function CellMove(options={}){
     this._itemWidth=0;
     this._layout=null;//容器的node
     this._oldPos={x:0,y:0};
-
     this._init();
 }
 _.extend(CellMove.prototype,{
@@ -96,8 +107,11 @@ _.extend(CellMove.prototype,{
             for(var j=0;j<4;j++){//i=col j=row
                 //克隆item的node并且设置宽高和初始的类
                 var _itemLayout=itemLayout.cloneNode(true);
-                _.addClass(_itemLayout,this.prefix[0]+i);
-                _.addClass(_itemLayout,this.prefix[1]+j);
+                _.addClass(_itemLayout,this.prefix[1]+i);
+                _.addClass(_itemLayout,this.prefix[0]+j);
+                if(j===0){
+                    _.addClass(_itemLayout,'special');//设置第一行元素为special元素
+                }
                 _itemLayout.style.width=this._itemWidth+'px';
                 _itemLayout.style.height=this._itemHeight+'px';
                 _itemLayout.style.lineHeight=this._itemHeight+'px';
@@ -112,7 +126,6 @@ _.extend(CellMove.prototype,{
     _initEvent:function () {
         var that=this;
         this._layout.addEventListener('mousedown',function (e) {
-
             if((!that.mouseHold)&&(~e.target.className.indexOf('movable-item'))){//按下的node是否有movable-item这个类
                 e.preventDefault();
                 that._oldPos.x=e.clientX-e.target.offsetLeft;
@@ -120,73 +133,94 @@ _.extend(CellMove.prototype,{
                 that.mouseHold=true;
 
                 that.holdNode=e.target;//获取移动的node 防止移动时e.target改变而出错
+                // console.log(that.holdNode);
             }
-
-
-
         });
         this._layout.addEventListener('mousemove',function (e) {
-
             if(!that.mouseHold){return;}
-
             that.holdNode.style.left=e.clientX- that._oldPos.x+'px';
             that.holdNode.style.top=e.clientY- that._oldPos.y+'px';//跟随鼠标移动
 
         })
         this._layout.addEventListener('mouseup',function (e) {
-
-           var relRow=_.getClassNum(e.target,'js-row-');
-           var relCol=_.getClassNum(e.target,'js-col-');
-
-           if(that.holdNode.innerText==='A'){//如果移动的是A格
-                var ARow=_.getClassNum(that.holdNode,'js-row-');
-                var ACol=_.getClassNum(that.holdNode,'js-col-');
-                var rrc=+(Math.abs(ARow-relRow)>=Math.abs(ACol-relCol));
-                //判断是列移动还是行移动
-                //行移动大于等于列移动=>行移动 反之则是 列移动
-                var AClassName=that.prefix[rrc]+(rrc?ARow:ACol);
-                var relClassName=that.prefix[rrc]+(rrc?relRow:relCol);
-                var AList=document.querySelectorAll('.'+AClassName);
-                var relList=document.querySelectorAll('.'+relClassName);
-                for(var i in AList){
-                    _.addClass(AList[i],relClassName);
-                    _.removeClass(AList[i],AClassName);
-                }
-                for(var i in relList){
-                    _.addClass(relList[i],AClassName);
-                    _.removeClass(relList[i],relClassName)
-                }
-            }else{
-               //获取当前的col 和 row
-               var relRow=_.getClassNum(e.target,'js-row-');
-               var relCol=_.getClassNum(e.target,'js-col-');
-               var holdRow=_.getClassNum(that.holdNode,'js-row-');
-               var holdCol=_.getClassNum(that.holdNode,'js-col-');
-               //col 和 row 调整
-               _.addClass(that.holdNode,'js-col-'+relCol);
-               _.addClass(that.holdNode,'js-row-'+relRow);
-               _.removeClass(that.holdNode,'js-col-'+holdCol);
-               _.removeClass(that.holdNode,'js-row-'+holdRow);
-
-               _.addClass(e.target,'js-col-'+holdCol);
-               _.addClass(e.target,'js-row-'+holdRow);
-               _.removeClass(e.target,'js-col-'+relCol);
-               _.removeClass(e.target,'js-row-'+relRow);
-           }
+            var holdNodeLeft=_.getStyle(that.holdNode,'left',true);
+            var holdNodeTop=_.getStyle(that.holdNode,'top',true);
+            var sourceRow=_.getClassNum(that.holdNode,'js-row-');
+            var sourceCol=_.getClassNum(that.holdNode,'js-col-');
+            var dstRow=Math.ceil((holdNodeTop+e.offsetY)/that._itemHeight)-1;
+            var dstCol=Math.ceil((holdNodeLeft+e.offsetX)/that._itemWidth)-1;
+            (dstCol<0)&&(dstCol=0)
+            (dstCol>4)&&(dstCol=4)
+            (dstRow<0)&&(dstRow=0)
+            (dstRow>4)&&(dstRow=4)//判断边界
+            // console.log(sourceRow,sourceCol,dstRow,dstCol);
+            var sourceSpecial=_.hasClass(that.holdNode,'special');
+            var dstNode=document.querySelector('.js-row-'+dstRow+'.js-col-'+dstCol);
+            var dstSpecial=_.hasClass(dstNode,'special');
+            // console.log(sourceSpecial,dstSpecial);
+            // console.log(sourceRow,sourceCol,dstRow,dstCol);
+            (sourceSpecial&&dstSpecial)&&(that._moveColOrRow(sourceCol,dstCol,true));//两个特殊元素交换，则交换列
+            (sourceSpecial&&!dstSpecial&&(+dstCol===(+sourceCol)))&&(that._moveColOrRow(sourceRow,dstRow,false));
+            (!sourceSpecial&&!dstSpecial)&&(that._moveCell(that.holdNode,dstNode));
+            (!sourceSpecial&&dstSpecial)&&(alert('非法移动!'));
             that._reOrder();
             that.mouseHold=false;
             that.holdNode=null;
-
         })
     },
+    /**
+     *
+     * @param sourceNode
+     * @param dstNode
+     * @private
+     */
+    _moveCell:function(sourceNode,dstNode){
+        var dstRow=_.getClassNum(dstNode,'js-row-');
+        var dstCol=_.getClassNum(dstNode,'js-col-');
+        var sourceRow=_.getClassNum(sourceNode,'js-row-');
+        var sourceCol=_.getClassNum(sourceNode,'js-col-');
+        //col 和 row 调整
+        _.addClass(sourceNode,'js-col-'+dstCol);
+        _.addClass(sourceNode,'js-row-'+dstRow);
+        _.removeClass(sourceNode,'js-col-'+sourceCol);
+        _.removeClass(sourceNode,'js-row-'+sourceRow);
+
+        _.addClass(dstNode,'js-col-'+sourceCol);
+        _.addClass(dstNode,'js-row-'+sourceRow);
+        _.removeClass(dstNode,'js-col-'+dstCol);
+        _.removeClass(dstNode,'js-row-'+dstRow);
+    },
+    /**
+     * 
+     * @param sourceRowOrCol 源列或行
+     * @param dstRowOrCol 目标列或行
+     * @param rowOrCol 列移动或行移动
+     * @private
+     */
+    _moveColOrRow:function (sourceRowOrCol,dstRowOrCol,rowOrCol) {//false=row,true=col;
+        // var rrc=+(Math.abs(ARow-relRow)>=Math.abs(ACol-relCol));//row or col
+        var sourceClassName=this.prefix[+rowOrCol]+sourceRowOrCol;
+        var dstClassName=this.prefix[+rowOrCol]+dstRowOrCol;
+        var sourceList=document.querySelectorAll('.'+sourceClassName);
+        var dstList=document.querySelectorAll('.'+dstClassName);
+        // console.log(sourceClassName,dstClassName)
+        for(var i in sourceList){
+            _.addClass(sourceList[i],dstClassName);
+            _.removeClass(sourceList[i],sourceClassName);
+        }
+        for(var i in dstList){
+            _.addClass(dstList[i],sourceClassName);
+            _.removeClass(dstList[i],dstClassName)
+        }
+    },
     _reOrder:function () {//重新位置规整函数
+        var node=null;
       for(var i=0;i<4;i++){
           for(var j=0;j<4;j++){
-              var node=document.querySelector('.js-col-'+i+'.js-row-'+j)
+              node=document.querySelector('.js-col-'+i+'.js-row-'+j)
               node.style.top=this._itemHeight*j+'px';
               node.style.left=this._itemWidth*i+'px';
           }
-
       }
 
     }
