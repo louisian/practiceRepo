@@ -48,6 +48,7 @@ var _ = (function () {//功能函数
     }
 
     function hasClass(node, className) {
+        if(!node)return;
         var obj_class = node.className;//获取 class 内容.
         var obj_class_lst = obj_class.split(/\s+/);//通过split空字符将cls转换成数组.
 
@@ -123,6 +124,8 @@ _.extend(CellMove.prototype, {
                 _itemLayout.style.width = this._itemWidth + 'px';
                 _itemLayout.style.height = this._itemHeight + 'px';
                 _itemLayout.style.lineHeight = this._itemHeight + 'px';
+                _itemLayout.style.backgroundColor='#fff';
+                _itemLayout.style.zIndex='1';
                 _itemLayout.innerText = this.itemText[i][j];
                 this._layout.appendChild(_itemLayout);
             }
@@ -138,41 +141,58 @@ _.extend(CellMove.prototype, {
                 that._oldPos.y = e.clientY - e.target.offsetTop;
                 that.mouseHold = true;
                 that.holdNode = e.target;//获取移动的node 防止移动时e.target改变而出错
+                that.holdNode.style.zIndex='99';
+                that.holdNode.style.borderColor='red';
             }
         });
+        var topMax=this._containerHeight-this._itemHeight;
+        var leftMax=this._containerWidth-this._itemWidth;
         this._layout.addEventListener('mousemove', function (e) {
             if (!that.mouseHold) {
                 return;
             }
-            that.holdNode.style.left = e.clientX - that._oldPos.x + 'px';
-            that.holdNode.style.top = e.clientY - that._oldPos.y + 'px';//跟随鼠标移动
-        })
-        this._layout.addEventListener('mouseup', function (e) {
+            var holdNodeLeft=e.clientX - that._oldPos.x;
+            var holdNodeTop=e.clientY - that._oldPos.y;
+            //限制移动
+            (holdNodeLeft<0)&&(holdNodeLeft=0);
+            (holdNodeTop<0)&&(holdNodeTop=0);
+            (holdNodeTop>topMax)&&(holdNodeTop=topMax);
+            (holdNodeLeft>leftMax)&&(holdNodeLeft=leftMax);
+
+            that.holdNode.style.left = holdNodeLeft  + 'px';
+            that.holdNode.style.top = holdNodeTop + 'px';//跟随鼠标移动
             var sourceRow = _.getClassNum(that.holdNode, 'js-row-');
             var sourceCol = _.getClassNum(that.holdNode, 'js-col-');
             //获取目标元素位置
             var dstRow = Math.ceil((_.getStyle(that.holdNode, 'top', true) + e.offsetY) / that._itemHeight) - 1;
             var dstCol = Math.ceil((_.getStyle(that.holdNode, 'left', true) + e.offsetX) / that._itemWidth) - 1;
             var sourceSpecial = _.hasClass(that.holdNode, 'special');
-            dstCol = Math.max(0, dstCol);
-            dstCol = Math.min(4, dstCol);
-            dstRow = Math.max(0, dstRow);
-            dstRow = Math.min(4, dstRow);
+
             //获取目标元素
             var dstNode = document.querySelector('.js-row-' + dstRow + '.js-col-' + dstCol);
             var dstSpecial = _.hasClass(dstNode, 'special');
-            //两个特殊元素交换，则交换列
-            (sourceSpecial && dstSpecial) && (that._moveColOrRow(sourceCol, dstCol, true));
-            //源元素是特殊元素，目标元素是非特殊元素，且处在一行中
-            (sourceSpecial && !dstSpecial && (+dstCol === (+sourceCol))) && (that._moveColOrRow(sourceRow, dstRow, false));
-            //不处在一行中
-            (sourceSpecial && !dstSpecial && (+dstCol !== (+sourceCol))) && (alert('移动无效，只能在一列中移动'));
-            //两个非特殊元素
-            (!sourceSpecial && !dstSpecial) && (that._moveCell(that.holdNode, dstNode));
-            //源元素是非特殊元素，目标元素是特殊元素
-            (!sourceSpecial && dstSpecial) && (alert('非法移动!'));
-            //重新规整
+            // console.log(dstRow,dstCol,sourceCol,sourceRow)
+            var shouldReOrder=true;
+            if((+dstRow!==+sourceRow||+dstCol!==+sourceCol)&&dstNode){//动态移动
+                //两个特殊元素交换，则交换列
+                (sourceSpecial && dstSpecial) && (that._moveColOrRow(sourceCol, dstCol, true));
+                //源元素是特殊元素，目标元素是非特殊元素，且处在一行中
+                (sourceSpecial && !dstSpecial && (+dstCol === (+sourceCol))) && (that._moveColOrRow(sourceRow, dstRow, false));
+                //不处在一行中
+                (sourceSpecial && !dstSpecial && (+dstCol !== (+sourceCol))) && (shouldReOrder=false);
+                //两个非特殊元素
+                (!sourceSpecial && !dstSpecial) && (that._moveCell(that.holdNode, dstNode));
+                //源元素是非特殊元素，目标元素是特殊元素
+                (!sourceSpecial && dstSpecial) && (shouldReOrder=false);
+                // 重新规整
+                if(shouldReOrder){
+                    that._reOrder(true);
+                }
+            }
+        })
+        this._layout.addEventListener('mouseup', function (e) {
             that._reOrder();
+            that.holdNode.style.zIndex='1';
             that.mouseHold = false;
             that.holdNode = null;
         })
@@ -222,11 +242,15 @@ _.extend(CellMove.prototype, {
             _.removeClass(dstList[i], dstClassName)
         }
     },
-    _reOrder: function () {//重新位置规整函数
+    _reOrder: function (noChangeColor) {//重新位置规整函数
+
         var node = null;
         for (var i = 0; i < 4; i++) {
             for (var j = 0; j < 4; j++) {
-                node = document.querySelector('.js-col-' + i + '.js-row-' + j)
+                node = document.querySelector('.js-col-' + i + '.js-row-' + j);
+                if(!noChangeColor){
+                    node.style.borderColor='black';
+                }
                 node.style.top = this._itemHeight * j + 'px';
                 node.style.left = this._itemWidth * i + 'px';
             }

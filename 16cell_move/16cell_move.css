@@ -11,10 +11,13 @@ html{
     border: 1px solid black;
     margin: 0 auto;
 
+
 }
 .movable-item{
+    box-sizing: border-box;
     position: absolute;
     border: 1px solid black;
     text-align: center;
+    /*transition: .75s all ease;*/
     /*background-color: white;*/
 }
