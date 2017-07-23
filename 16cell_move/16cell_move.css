@@ -13,11 +13,14 @@ html{
 
 
 }
+.tran-move{
+    transition: .25s all ease;
+}
 .movable-item{
     box-sizing: border-box;
     position: absolute;
     border: 1px solid black;
     text-align: center;
-    /*transition: .75s all ease;*/
+
     /*background-color: white;*/
 }

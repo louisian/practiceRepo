@@ -36,7 +36,7 @@ var _ = (function () {//功能函数
         var oldClassName = node.className;
         var newClassName = '';
         newClassName = (oldClassName === '' ? className : (oldClassName + ' ' + className));
-        newClassName = newClassName.replace(/\r+/g, '');
+        newClassName = newClassName.replace(/\s+/g, ' ');
         node.className = newClassName;
     }
 
@@ -44,7 +44,7 @@ var _ = (function () {//功能函数
         var oldClassName = node.className;
         var Reg = new RegExp(' ' + className + ' ');
         var newClassName = (' ' + oldClassName + ' ').replace(Reg, ' ');
-        node.className = newClassName.replace(/^\r|\r$/, '');//删除前后空格
+        node.className = newClassName.replace(/\s+/g, ' ');//删除多余空格
     }
 
     function hasClass(node, className) {
@@ -118,6 +118,7 @@ _.extend(CellMove.prototype, {
                 var _itemLayout = itemLayout.cloneNode(true);
                 _.addClass(_itemLayout, this.prefix[1] + i);
                 _.addClass(_itemLayout, this.prefix[0] + j);
+                _.addClass(_itemLayout, 'tran-move');
                 if (j === 0) {
                     _.addClass(_itemLayout, 'special');//设置第一行元素为special元素
                 }
@@ -143,6 +144,7 @@ _.extend(CellMove.prototype, {
                 that.holdNode = e.target;//获取移动的node 防止移动时e.target改变而出错
                 that.holdNode.style.zIndex='99';
                 that.holdNode.style.borderColor='red';
+                _.removeClass(that.holdNode,'tran-move');
             }
         });
         var topMax=this._containerHeight-this._itemHeight;
@@ -191,6 +193,7 @@ _.extend(CellMove.prototype, {
             }
         })
         this._layout.addEventListener('mouseup', function (e) {
+            _.addClass(that.holdNode,'tran-move');
             that._reOrder();
             that.holdNode.style.zIndex='1';
             that.mouseHold = false;
